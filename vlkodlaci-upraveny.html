@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vlkodlaci - Desková hra pro iPad tablety</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- =====================================================
+         ÚVODNÍ OBRAZOVKA - Spuštění nové hry
+         ===================================================== -->
+    <div id="welcome-screen" class="screen active">
+        <div class="container">
+            <div class="welcome-content">
+                <h1 class="game-title">🐺 Vlkodlaci</h1>
+                <p class="game-subtitle">Digitální vypravěč pro iPad tablety</p>
+                <button class="btn btn--primary btn--lg" onclick="startNewGame()">
+                    Nová hra
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         NASTAVENÍ HRÁČŮ - Přidávání jmen hráčů do hry
+         ===================================================== -->
+    <div id="setup-screen" class="screen">
+        <div class="container">
+            <h2>Nastavení hráčů</h2>
+            <div class="setup-content">
+                <!-- Sekce pro přidávání hráčů -->
+                <div class="player-input-section">
+                    <div class="form-group">
+                        <label class="form-label" for="player-name-input">
+                            Přidej hráče (min. 6, max. 18)
+                        </label>
+                        <input type="text" 
+                               id="player-name-input" 
+                               class="form-control" 
+                               placeholder="Jméno hráče"
+                               onkeypress="handlePlayerInputKeypress(event)">
+                        <button class="btn btn--primary" 
+                                onclick="handleAddPlayer()" 
+                                style="margin-top: var(--space-8);">
+                            Přidat hráče
+                        </button>
+                    </div>
+                    
+                    <!-- Seznam přidaných hráčů -->
+                    <div class="players-list">
+                        <h3>Hráči (<span id="player-count">0</span>)</h3>
+                        <div id="players-container" class="players-container">
+                            <!-- Dynamicky generované jmenovky hráčů -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Informace o hře -->
+                <div class="game-info-section">
+                    <h3>O hře Vlkodlaci</h3>
+                    <p>Klasická hra pro 6-18 hráčů, kde vesničané bojují proti vlkodlakům. 
+                       Aplikace nahrazuje vypravěče a automaticky řídí průběh hry.</p>
+                    
+                    <h4>Základní role:</h4>
+                    <ul>
+                        <li><strong>Vlkodlaci</strong> - každou noc zabíjejí vesničany</li>
+                        <li><strong>Věštec</strong> - zjišťuje role ostatních hráčů</li>
+                        <li><strong>Čarodějka</strong> - má lektvary léčení a jedu</li>
+                        <li><strong>Vesničané</strong> - hledají a lynčují vlkodlaky</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Tlačítko pro pokračování -->
+            <div class="setup-actions">
+                <button id="continue-to-roles" 
+                        class="btn btn--primary btn--lg" 
+                        onclick="goToRoleSetup()" 
+                        disabled>
+                    Pokračovat na nastavení rolí
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         NASTAVENÍ ROLÍ - Výběr a úprava počtu rolí
+         ===================================================== -->
+    <div id="roles-setup-screen" class="screen">
+        <div class="container">
+            <h2>Nastavení rolí</h2>
+            <div class="role-setup-content">
+                
+                <!-- Nastavení času diskuze -->
+                <div class="discussion-time-section">
+                    <h3>Délka diskuze</h3>
+                    <select id="discussion-time" class="form-control">
+                        <option value="3">3 minuty</option>
+                        <option value="5" selected>5 minut</option>
+                        <option value="7">7 minut</option>
+                        <option value="10">10 minut</option>
+                        <option value="0">Bez časového limitu</option>
+                    </select>
+                </div>
+                
+                <!-- Rozložení rolí s možností úprav -->
+                <div class="roles-distribution">
+                    <div class="role-summary">
+                        <div>
+                            <span id="roles-total-count">Celkem rolí: 0</span> | 
+                            <span id="players-total-count">Hráčů: 0</span>
+                        </div>
+                        <div id="role-validation" class="role-validation">
+                            Nastavte role
+                        </div>
+                    </div>
+                    
+                    <!-- Kontejner pro jednotlivé role s tlačítky +/- -->
+                    <div id="roles-container" class="roles-container">
+                        <!-- Dynamicky generované role s ovládacími prvky -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tlačítko pro pokračování na rozmístění -->
+            <div class="setup-actions">
+                <button id="start-positioning" 
+                        class="btn btn--primary btn--lg" 
+                        onclick="startPositioning()" 
+                        disabled>
+                    Pokračovat na rozmístění hráčů
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         ROZMÍSTĚNÍ HRÁČŮ - Drag & drop po obvodu obrazovky
+         ===================================================== -->
+    <div id="positioning-screen" class="screen">
+        <div class="container">
+            <h2>Rozmístění hráčů</h2>
+            <p class="positioning-instructions">
+                Přesuň jmenovky hráčů po obvodu obrazovky pomocí přetažení
+            </p>
+            
+            <!-- Herní kruh s jmenovkami hráčů -->
+            <div class="positioning-area">
+                <div id="game-circle" class="game-circle positioning-enabled">
+                    <!-- Centrální informační panel -->
+                    <div class="center-info" id="center-info">
+                        <div class="center-text">🎯</div>
+                        <div class="center-instruction">
+                            Rozmístění hráčů po obvodu
+                        </div>
+                    </div>
+                    <!-- Jmenovky hráčů se generují dynamicky -->
+                </div>
+            </div>
+            
+            <!-- Tlačítko pro dokončení rozmístění -->
+            <div class="positioning-actions">
+                <button class="btn btn--primary btn--lg" onclick="finishPositioning()">
+                    Dokončit rozmístění a začít hru
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         UKÁZÁNÍ ROLÍ - Postupné zobrazení role každému hráči
+         ===================================================== -->
+    <div id="role-reveal-screen" class="screen">
+        <div class="container">
+            <div class="role-reveal-content">
+                <h2>Ukázání rolí</h2>
+                <p>Všichni zavřete oči.</p>
+                <p><strong id="current-reveal-player">Hráč</strong>, otevři oči a podívej se na svou roli.</p>
+                
+                <!-- Karta s rolí hráče -->
+                <div id="role-reveal-card" class="role-card hidden">
+                    <div class="role-card-content">
+                        <h3 id="revealed-role-name">Role</h3>
+                        <p id="revealed-role-description">Popis role</p>
+                    </div>
+                </div>
+                
+                <!-- Tlačítka pro ukázání/skrytí role -->
+                <div class="role-reveal-actions">
+                    <button id="show-role" 
+                            class="btn btn--primary btn--lg" 
+                            onclick="showRoleCard()">
+                        Zobrazit svou roli
+                    </button>
+                    <button id="hide-role" 
+                            class="btn btn--secondary btn--lg hidden" 
+                            onclick="hideRoleCard()">
+                        Zavři oči a potvrdím
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         HLAVNÍ HERNÍ OBRAZOVKA - Automatizovaný průběh hry
+         ===================================================== -->
+    <div id="game-screen" class="screen">
+        <div class="container">
+            <!-- Hlavička s informacemi o hře -->
+            <div class="game-header">
+                <div class="game-info">
+                    <div class="day-counter">
+                        Den <span id="day-number">1</span>
+                    </div>
+                    <div class="timer" id="game-timer">
+                        <!-- Časovač pro diskuzi/hlasování -->
+                    </div>
+                </div>
+                
+                <!-- Informace o aktuální fázi -->
+                <div class="phase-info">
+                    <span id="current-phase">Noc</span>
+                </div>
+            </div>
+            
+            <!-- Herní oblast s kruhem hráčů -->
+            <div class="game-area">
+                <div id="game-circle-play" class="game-circle game-phase">
+                    <!-- Centrální instrukce pro aktuální fázi -->
+                    <div class="center-info" id="game-center-info">
+                        <div class="phase-instruction" id="phase-instruction">
+                            <!-- Zde se zobrazují instrukce pro aktuální fázi:
+                                 - "Noc přichází, všichni zavřete oči"
+                                 - "Věštec vybírá hráče k prozkoumání"
+                                 - "Vlkodlaci vybírají oběť"
+                                 - "Čarodějka rozhoduje o lektvarech"
+                                 - "Probíhá denní diskuze"
+                                 - "Hlasování o vyřazení hráče" -->
+                        </div>
+                        
+                        <!-- Tlačítka pro akce v centru -->
+                        <div class="center-actions" id="center-actions">
+                            <!-- Dynamicky generovaná tlačítka pro aktuální fázi -->
+                        </div>
+                    </div>
+                    
+                    <!-- Jmenovky hráčů rozmístěné po obvodu -->
+                    <!-- Generují se dynamicky na základě uložených pozic -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         KONEC HRY - Vyhlášení výsledků
+         ===================================================== -->
+    <div id="game-end-screen" class="screen">
+        <div class="container">
+            <div class="game-end-content">
+                <h2>Konec hry</h2>
+                
+                <!-- Oznámení vítěze -->
+                <div class="winner-announcement">
+                    <h3 id="winner-team">Vítězný tým</h3>
+                    <div class="winner-players" id="winner-players">
+                        <!-- Seznam vítězných hráčů -->
+                    </div>
+                </div>
+                
+                <!-- Tlačítka pro restart -->
+                <div class="game-end-actions">
+                    <button class="btn btn--primary btn--lg" onclick="startNewGame()">
+                        Nová hra
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         MODÁLNÍ OKNA - Potvrzovací dialogy a informace
+         ===================================================== -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Zpráva</h3>
+            <p id="modal-message">Text zprávy</p>
+            <div class="modal-actions" id="modal-actions">
+                <!-- Dynamicky generovaná tlačítka -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript aplikace -->
+    <script src="app.js"></script>
+</body>
+</html>
